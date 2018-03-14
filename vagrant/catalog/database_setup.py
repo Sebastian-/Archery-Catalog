@@ -26,7 +26,7 @@ class Item(Base):
     time_created = Column(DateTime(timezone=True), server_default=func.now())
     name = Column(String(250), nullable=False)
     type = Column(String(50))
-    # TODO: add user id column
+    # TODO: add user id column?
 
     catalog = relationship("Catalog", back_populates="items")
 
