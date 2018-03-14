@@ -1,5 +1,5 @@
 from flask import Flask
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, desc, distinct
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Catalog, Item, Riser
 
@@ -12,15 +12,22 @@ session = DBSession()
 
 @app.route('/')
 def HomePage():
-	risers = session.query(Riser).all()
-	output = ""
-	for r in risers:
+	# This assumes there is only one catalog in the database
+	recent_items = session.query(Item).order_by(desc(Item.time_created)).limit(10)
+	categories = session.query(Item.type).distinct()
+	output = "RECENT ITEMS <br>"
+	for r in recent_items:
 		output += r.name
 		output += "<br>"
-		output += r.type
+		output += str(r.time_created)
 		output += "<br>"
+	output += "CATEGORIES <br>"
+	for c in categories:
+		output += c.type
+		output += "<br>"
+
 	return output
 
 if __name__ == '__main__':
 	app.debug = True
-	app.run(host = '0.0.0.0', port = 5000)
+	app.run(host = '0.0.0.0', port = 8000)

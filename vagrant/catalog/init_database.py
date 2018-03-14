@@ -1,3 +1,4 @@
+import time
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Catalog, Item, Riser, Arrow, Limb, Plunger,\
@@ -10,25 +11,33 @@ session = DBSession()
 
 
 catalog = Catalog(name="Archery Catalog")
+c_id = catalog.id
+session.add(catalog)
+session.commit
 
 # Risers
 riser1 = Riser(name="MK Archery MK Z", color="White", length="25 Inches",
-               handedness="Right Handed", made_of="Aluminum")
-catalog.items.append(riser1)
+               handedness="Right Handed", made_of="Aluminum", catalog_id = c_id)
+session.add(riser1)
+session.commit()
+time.sleep(1)
 
 riser2 = Riser(name="Hoyt Formula Faktor", color="Green", length="27 Inches",
-               handedness="Right Handed", made_of="Aluminum")
-catalog.items.append(riser2)
+               handedness="Right Handed", made_of="Aluminum", catalog_id = c_id)
+session.add(riser2)
+session.commit()
+time.sleep(1)
 
 riser3 = Riser(name="Win & Win WIAWIS NANO TFT", color="Black",
-               length="25 Inches", handedness="Left Handed", made_of="Carbon")
-catalog.items.append(riser3)
+               length="25 Inches", handedness="Left Handed", made_of="Carbon", catalog_id = c_id)
+session.add(riser3)
+session.commit()
+time.sleep(1)
 
 riser4 = Riser(name="Samick Sage Takedown Recurve", color="Brown", 
                length="25 Inches", handedness="Right Handed", 
-               made_of="Dymondwood")
-catalog.items.append(riser4)
-
-
-session.add(catalog)
+               made_of="Dymondwood", catalog_id = c_id)
+session.add(riser4)
 session.commit()
+time.sleep(1)
+
