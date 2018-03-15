@@ -10,10 +10,10 @@
 
     <main>
     	<form action="{{url_for('editItem', item_type=item.type, item_id=item.id)}}" method="POST">
-    		{% for col in mapper.attrs %}
+    		{% for key, value in fields.items() %}
     			<p>
-    				{{col.key}} :
-    				<input type="text" size="30" name={{col.key}} placeholder={{col.value}}>
+    				{{key}} :
+    				<input type="text" size="30" name="{{key}}" placeholder="{{value}}">
     			</p>
     		{% endfor %}
     		<input type='submit' value='Edit'>

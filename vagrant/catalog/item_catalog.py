@@ -2,6 +2,7 @@ from flask import Flask, url_for, render_template
 from sqlalchemy import create_engine, desc, distinct, inspect
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Catalog, Item, Riser, Limb
+import collections
 
 app = Flask(__name__)
 
@@ -61,8 +62,23 @@ def itemPage(item_type, item_id):
 @app.route("/<item_type>/<int:item_id>/edit/")
 def editItem(item_type, item_id):
 	item = session.query(Item).filter(Item.id == item_id).one()
+	fields = getDisplayDict(item)
+	return render_template("edit_item.html", fields=fields, item=item)
+
+
+def getDisplayDict(item):
+	"""Returns a dictionary containing the user-facing fields of an item.
+	Field names are formatted so that they contain no underscores and have
+	the first letter of each word capitalized."""
+	private_fields = ["id", "catalog_id", "time_created", "type", "catalog"]
+	d = collections.OrderedDict()
 	mapper = inspect(item)
-	return render_template("edit_item.html", mapper=mapper, item=item)
+	for col in mapper.attrs:
+		if col.key not in private_fields:
+			key = str(col.key).replace("_"," ").title()
+			d[key] = str(col.value)
+	return d
+
 
 if __name__ == '__main__':
 	app.debug = True
