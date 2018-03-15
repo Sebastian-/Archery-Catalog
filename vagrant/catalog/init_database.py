@@ -9,11 +9,11 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
-
 catalog = Catalog(name="Archery Catalog")
-c_id = catalog.id
 session.add(catalog)
 session.commit
+
+c_id = catalog.id
 
 # Risers
 riser1 = Riser(name="MK Archery MK Z", color="White", length="25 Inches",
