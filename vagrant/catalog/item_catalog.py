@@ -1,4 +1,4 @@
-from flask import Flask, url_for, render_template
+from flask import Flask, url_for, render_template, request, redirect
 from sqlalchemy import create_engine, desc, distinct, inspect
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Catalog, Item, Riser, Limb
@@ -59,11 +59,20 @@ def itemPage(item_type, item_id):
 	return output
 
 
-@app.route("/<item_type>/<int:item_id>/edit/")
+@app.route("/<item_type>/<int:item_id>/edit/", methods=["GET", "POST"])
 def editItem(item_type, item_id):
 	item = session.query(Item).filter(Item.id == item_id).one()
-	fields = getDisplayDict(item)
-	return render_template("edit_item.html", fields=fields, item=item)
+	if request.method == "POST":
+		for key, value in request.form.items():
+			if value:
+				field_name = formatFieldName(key, undo=True)
+				setattr(item, field_name, value)
+		session.add(item)
+		session.commit()
+		return redirect(url_for("itemPage", item_type=item.type, item_id=item.id))
+	else:
+		fields = getDisplayDict(item)
+		return render_template("edit_item.html", fields=fields, item=item)
 
 
 def getDisplayDict(item):
@@ -75,9 +84,16 @@ def getDisplayDict(item):
 	mapper = inspect(item)
 	for col in mapper.attrs:
 		if col.key not in private_fields:
-			key = str(col.key).replace("_"," ").title()
+			key = formatFieldName(str(col.key))
 			d[key] = str(col.value)
 	return d
+
+
+def formatFieldName(field, undo=False):
+	if undo:
+		return field.replace(" ","_").lower()
+	else:
+		return field.replace("_"," ").title()
 
 
 if __name__ == '__main__':
