@@ -35,13 +35,16 @@ def homePage():
 
 @app.route("/<item_type>/")
 def categoryPage(item_type):
-	items = session.query(Item).filter(Item.type == item_type)
+	items = session.query(Item).filter(Item.type == item_type).order_by(desc(Item.time_created))
 	output = ""
 	for i in items:
 		output += "<a href=\""+url_for("itemPage", item_type=i.type, item_id=i.id)+"\" /a>"
 		output += "<br>"
 		output += i.name
 		output += "<br>"
+	output += "<br><a href="+url_for("newItemPage", item_type=item_type)+">"
+	output += "New"
+	output += "</a><br>"
 	return output
 
 
@@ -57,6 +60,22 @@ def itemPage(item_type, item_id):
 	output += "Edit"
 	output += "</a><br>"
 	return output
+
+
+@app.route("/<item_type>/new", methods=["GET", "POST"])
+def newItemPage(item_type):
+	constructor = globals()[item_type]
+	new_item = constructor()
+	if request.method == "POST":
+		for key, value in request.form.items():
+			field_name = formatFieldName(key, undo=True)
+			setattr(new_item, field_name, value)
+		session.add(new_item)
+		session.commit()
+		return redirect(url_for("categoryPage", item_type=item_type))
+	else:
+		fields = getDisplayDict(new_item)
+		return render_template("new_item.html", fields=fields, item=new_item)
 
 
 @app.route("/<item_type>/<int:item_id>/edit/", methods=["GET", "POST"])

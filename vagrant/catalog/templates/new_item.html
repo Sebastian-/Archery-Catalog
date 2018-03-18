@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Archery Equipment Catalog</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<body>
+
+    <header></header>
+
+    <main>
+    	<form action="{{url_for('newItemPage', item_type=item.type)}}" method="POST">
+    		{% for key, value in fields.items() %}
+    			<p>
+    				{{key}} :
+    				<input type="text" size="30" name="{{key}}">
+    			</p>
+    		{% endfor %}
+    		<input type='submit' value='Edit'>
+    	</form>
+    	<a href="{{url_for('categoryPage', item_type=item.type)}}">Cancel</a>
+    </main>
+
+    <footer></footer>
+</body>
+</html>
