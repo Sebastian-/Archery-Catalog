@@ -1,21 +1,23 @@
+import collections
+
 from flask import Flask, url_for, render_template, request, redirect
 from sqlalchemy import create_engine, desc, distinct, inspect
 from sqlalchemy.orm import sessionmaker
-from database_setup import Base, Catalog, Item, Riser, Limb
-import collections
+
+from database_setup import Base, Catalog, Item, Riser, Limb, Arrow, Plunger, Sight
 
 app = Flask(__name__)
-
 engine = create_engine('sqlite:///archery_catalog.db')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
+
 @app.route("/")
 def homePage():
 	# These queries assume there is only one catalog in the database
 	recent_items = session.query(Item).order_by(desc(Item.time_created)).limit(10)
-	categories = session.query(Item.type).distinct()
+	categories = [cls.__name__ for cls in Item.__subclasses__()]
 	output = "RECENT ITEMS <br>"
 	for r in recent_items:
 		output += "<a href="+url_for("itemPage", item_type=r.type, item_id=r.id)+">"
@@ -26,9 +28,9 @@ def homePage():
 		output += "</a><br>"
 	output += "CATEGORIES <br>"
 	for c in categories:
-		output += "<a href="+url_for("categoryPage", item_type=c.type)+">"
+		output += "<a href="+url_for("categoryPage", item_type=c)+">"
 		output += "<br>"
-		output += c.type
+		output += c
 		output += "</a><br>"
 	return output
 
@@ -38,10 +40,10 @@ def categoryPage(item_type):
 	items = session.query(Item).filter(Item.type == item_type).order_by(desc(Item.time_created))
 	output = ""
 	for i in items:
-		output += "<a href=\""+url_for("itemPage", item_type=i.type, item_id=i.id)+"\" /a>"
+		output += "<a href="+url_for("itemPage", item_type=i.type, item_id=i.id)+">"
 		output += "<br>"
 		output += i.name
-		output += "<br>"
+		output += "</a><br>"
 	output += "<br><a href="+url_for("newItemPage", item_type=item_type)+">"
 	output += "New"
 	output += "</a><br>"
@@ -50,7 +52,7 @@ def categoryPage(item_type):
 
 @app.route("/<item_type>/<int:item_id>/")
 def itemPage(item_type, item_id):
-	item = session.query(Item).filter(Item.id == item_id).one()
+	item = session.query(Item).filter(Item.id == item_id).first()
 	mapper = inspect(item)
 	output = ""
 	for col in mapper.attrs:
@@ -59,7 +61,7 @@ def itemPage(item_type, item_id):
 	output += "<a href="+url_for("editItem", item_type=item.type, item_id=item.id)+">"
 	output += "Edit"
 	output += "</a><br>"
-	output += "<a href="+url_for("deleteItemPage", item_id=item.id)+">"
+	output += "<a href="+url_for("deleteItemPage", item_type=item.type, item_id=item.id)+">"
 	output += "Delete"
 	output += "</a><br>"
 	return output
@@ -83,7 +85,9 @@ def newItemPage(item_type):
 
 @app.route("/<item_type>/<int:item_id>/edit/", methods=["GET", "POST"])
 def editItem(item_type, item_id):
-	item = session.query(Item).filter(Item.id == item_id).one()
+	item = session.query(Item).filter(Item.id == item_id).first()
+	if not item:
+		return redirect(url_for("categoryPage", item_type=item.type))
 	if request.method == "POST":
 		for key, value in request.form.items():
 			if value:
@@ -97,15 +101,18 @@ def editItem(item_type, item_id):
 		return render_template("edit_item.html", fields=fields, item=item)
 
 
-@app.route("/delete/<int:item_id>/", methods=["GET", "POST"])
-def deleteItemPage(item_id):
-	item = session.query(Item).filter(Item.id == item_id).one()
+@app.route("/<item_type>/<int:item_id>/delete", methods=["GET", "POST"])
+def deleteItemPage(item_type, item_id):
+	item = session.query(Item).filter(Item.id == item_id).first()
+	if not item:
+		# This handles the case where a user goes back and clicks cancel after already deleting an item
+		return redirect(url_for("categoryPage", item_type=item_type))
 	if request.method == "POST":
 		session.delete(item)
 		session.commit()
-		return redirect(url_for("categoryPage", item_type=item.type))
+		return redirect(url_for("categoryPage", item_type=item_type))
 	else:
-		return render_template("delete_item.html", item=item)
+		return render_template("delete_item.html", item_type=item_type, item=item)
 
 
 def getDisplayDict(item):
