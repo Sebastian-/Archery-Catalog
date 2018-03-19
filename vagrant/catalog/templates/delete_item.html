@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Archery Equipment Catalog</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<body>
+
+    <header></header>
+
+    <main>
+    	<form action="{{url_for('deleteItemPage', item_id=item.id)}}" method="POST">
+    		<p>
+                Are you sure you wish to delete {{item.name}}?      
+            </p>
+    		<input type='submit' value='Delete'>
+    	</form>
+    	<a href="{{url_for('itemPage', item_type=item.type, item_id=item.id)}}">Cancel</a>
+    </main>
+
+    <footer></footer>
+</body>
+</html>

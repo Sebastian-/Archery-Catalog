@@ -59,6 +59,9 @@ def itemPage(item_type, item_id):
 	output += "<a href="+url_for("editItem", item_type=item.type, item_id=item.id)+">"
 	output += "Edit"
 	output += "</a><br>"
+	output += "<a href="+url_for("deleteItemPage", item_id=item.id)+">"
+	output += "Delete"
+	output += "</a><br>"
 	return output
 
 
@@ -88,10 +91,21 @@ def editItem(item_type, item_id):
 				setattr(item, field_name, value)
 		session.add(item)
 		session.commit()
-		return redirect(url_for("itemPage", item_type=item.type, item_id=item.id))
+		return redirect(url_for("itemPage", item_type=item_type, item_id=item.id))
 	else:
 		fields = getDisplayDict(item)
 		return render_template("edit_item.html", fields=fields, item=item)
+
+
+@app.route("/delete/<int:item_id>/", methods=["GET", "POST"])
+def deleteItemPage(item_id):
+	item = session.query(Item).filter(Item.id == item_id).one()
+	if request.method == "POST":
+		session.delete(item)
+		session.commit()
+		return redirect(url_for("categoryPage", item_type=item.type))
+	else:
+		return render_template("delete_item.html", item=item)
 
 
 def getDisplayDict(item):
