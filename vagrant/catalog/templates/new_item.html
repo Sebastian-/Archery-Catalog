@@ -4,21 +4,31 @@
     <title>Archery Equipment Catalog</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='styles.css')}}">
+</head>
 <body>
 
-    <header></header>
+    <header>
+        <h1 id="header-title">
+            ARCHERY EQUIPMENT CATALOG
+        </h1>
+    </header>
 
     <main>
-    	<form action="{{url_for('newItemPage', item_type=item.type)}}" method="POST">
-    		{% for key, value in fields.items() %}
-    			<p>
-    				{{key}} :
-    				<input type="text" size="30" name="{{key}}">
-    			</p>
-    		{% endfor %}
-    		<input type='submit' value='Edit'>
-    	</form>
-    	<a href="{{url_for('categoryPage', item_type=item.type)}}">Cancel</a>
+        <form action="{{url_for('newItemPage', item_type=item.type)}}" method="POST">
+            <fieldset>
+                <legend>Add A New {{item.type}}</legend>
+                {% for key, value in fields.items() %}
+                <p>
+                    <label for="{{key}}">{{key}}</label>
+                    <input id="{{key}}" type="text" size="30" name="{{key}}"
+                    {% if key == "Name" %} required {% endif %}>
+                </p>
+                {% endfor %}
+            </fieldset>
+            <input type="submit" value="Add">
+            <a class="cancelButton" href="{{url_for('categoryPage', item_type=item.type)}}">Cancel</a>
+        </form>
     </main>
 
     <footer></footer>

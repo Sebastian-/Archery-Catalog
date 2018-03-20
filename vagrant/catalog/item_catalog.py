@@ -30,7 +30,7 @@ def homePage():
 	for c in categories:
 		output += "<a href="+url_for("categoryPage", item_type=c)+">"
 		output += "<br>"
-		output += c
+		output += c + "s"
 		output += "</a><br>"
 	return output
 
