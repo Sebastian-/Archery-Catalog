@@ -71,5 +71,12 @@ label {
 #header-title {
 	height: 10vh;
 	text-align: center;
-	vertical-align: middle;
+}
+
+dt::after {
+  content: ": ";
+}
+
+dd, dt {
+	display: inline-block;
 }

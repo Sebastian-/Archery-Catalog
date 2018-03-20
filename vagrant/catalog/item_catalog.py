@@ -53,6 +53,10 @@ def categoryPage(item_type):
 @app.route("/<item_type>/<int:item_id>/")
 def itemPage(item_type, item_id):
 	item = session.query(Item).filter(Item.id == item_id).first()
+	fields = getDisplayDict(item)
+	return render_template("item_page.html", fields=fields, item=item)
+
+	item = session.query(Item).filter(Item.id == item_id).first()
 	mapper = inspect(item)
 	output = ""
 	for col in mapper.attrs:
