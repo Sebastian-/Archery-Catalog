@@ -1,9 +1,10 @@
-import collections, random, string
+import collections, random, string, json, requests, httplib2
 
-from flask import Flask, url_for, render_template, request, redirect
+from flask import Flask, url_for, render_template, request, redirect, make_response
 from flask import session as login_session
 from sqlalchemy import create_engine, desc, distinct, inspect
 from sqlalchemy.orm import sessionmaker
+from oauth2client.client import flow_from_clientsecrets, FlowExchangeError
 
 from database_setup import Base, Catalog, Item, Riser, Limb, Arrow, Plunger, Sight
 
@@ -12,7 +13,7 @@ engine = create_engine('sqlite:///archery_catalog.db')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
-
+CLIENT_ID = json.loads(open("client_secrets.json", "r").read())["web"]["client_id"]
 
 # Queries assume there is only one catalog in the database
 
@@ -91,7 +92,7 @@ def showLogin():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     login_session['state'] = state
-    return "The current session state is %s" % login_session['state']
+    return render_template("login.html", STATE=state, client_id=CLIENT_ID)
 
 
 
