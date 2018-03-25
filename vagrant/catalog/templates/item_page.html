@@ -10,23 +10,39 @@
 <body>
 
     <header>
-        <a id="header-title" href="{{url_for('homePage')}}"><h1>
-            ARCHERY EQUIPMENT CATALOG
-        </h1></a>
-        <a id="loginButton" href="{{url_for('categoryPage', item_type=item.type)}}">Login</a>
+        <div class="headerContent">
+            <a id="header-title" href="{{url_for('homePage')}}"><h1>
+                ARCHERY EQUIPMENT CATALOG
+            </h1></a>
+            <a class="button loginButton" href="{{url_for('homePage')}}">Login</a>
+        </div>
     </header>
 
     <main>
-        <dl>
-            {% for key, value in fields.items() %}
-            <div><dt>
-                {{key}}
-            </dt>
-            <dd>
-                {{value}}
-            </dd></div>
-            {% endfor %}
-        </dl>
+        <article class="itemCard">
+            <section class="itemDetails">
+                <h3 class="itemHeading">{{fields["Name"]}} - {{item.type}}</h3>
+                <dl class="itemDL">
+                {% for key, value in fields.items() if key != "Name" %}
+                    <div><dt>
+                        {{key}}
+                    </dt>
+                    <dd>
+                        {{value}}
+                    </dd></div>
+                {% endfor %}
+                </dl>
+            </section>
+            <section class="userDetails">
+                <p class="userName">User Name Here</p>
+                <a class="button editButton" 
+                   href="{{url_for('editItem', item_type=item.type, item_id=item.id)}}">
+                Edit</a>
+                <a class="button deleteButton" 
+                   href="{{url_for('deleteItemPage', item_type=item.type, item_id=item.id)}}">
+                Delete</a>
+            </section>
+        </div>
     </main>
 
     <footer></footer>

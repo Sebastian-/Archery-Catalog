@@ -4,21 +4,34 @@
     <title>Archery Equipment Catalog</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='styles.css')}}">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300" rel="stylesheet">
+</head>
 <body>
 
-    <header></header>
+    <header>
+        <div class="headerContent">
+            <a id="header-title" href="{{url_for('homePage')}}"><h1>
+                ARCHERY EQUIPMENT CATALOG
+            </h1></a>
+            <a class="button loginButton" href="{{url_for('homePage')}}">Login</a>
+        </div>
+    </header>
 
     <main>
     	<form action="{{url_for('editItem', item_type=item.type, item_id=item.id)}}" method="POST">
-    		{% for key, value in fields.items() %}
-    			<p>
-    				{{key}} :
-    				<input type="text" size="30" name="{{key}}" placeholder="{{value}}">
-    			</p>
-    		{% endfor %}
-    		<input type='submit' value='Edit'>
-    	</form>
-    	<a href="{{url_for('itemPage', item_type=item.type, item_id=item.id)}}">Cancel</a>
+            <fieldset>
+                <legend>Edit {{item.type}}</legend>
+                {% for key, value in fields.items() %}
+                    <div class="formRow">
+                        <label for="{{key}}">{{key}}</label>
+                        <input id="{{key}}" type="text" size="30" name="{{key}}" placeholder="{{value}}">
+                    </div>
+                {% endfor %}
+            </fieldset>
+            <input class="button" type="submit" value="Edit">
+            <a class="button cancelButton" href="{{url_for('itemPage', item_type=item.type, item_id=item.id)}}">Cancel</a>
+        </form>
     </main>
 
     <footer></footer>

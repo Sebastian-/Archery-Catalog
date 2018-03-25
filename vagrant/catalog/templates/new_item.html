@@ -10,10 +10,12 @@
 <body>
 
     <header>
-        <a id="header-title" href="{{url_for('homePage')}}"><h1>
-            ARCHERY EQUIPMENT CATALOG
-        </h1></a>
-        <a id="loginButton" href="{{url_for('categoryPage', item_type=item.type)}}">Login</a>
+        <div class="headerContent">
+            <a id="header-title" href="{{url_for('homePage')}}"><h1>
+                ARCHERY EQUIPMENT CATALOG
+            </h1></a>
+            <a class="button loginButton" href="{{url_for('homePage')}}">Login</a>
+        </div>
     </header>
 
     <main>
@@ -21,15 +23,15 @@
             <fieldset>
                 <legend>Add A New {{item.type}}</legend>
                 {% for key, value in fields.items() %}
-                <div class="formRow">
-                    <label for="{{key}}">{{key}}</label>
-                    <input id="{{key}}" type="text" size="30" name="{{key}}"
-                    {% if key == "Name" %} required {% endif %}>
-                </div>
+                    <div class="formRow">
+                        <label for="{{key}}">{{key}}</label>
+                        <input id="{{key}}" type="text" size="30" name="{{key}}"
+                        {% if key == "Name" %} required {% endif %}>
+                    </div>
                 {% endfor %}
             </fieldset>
-            <input type="submit" value="Add">
-            <a class="cancelButton" href="{{url_for('categoryPage', item_type=item.type)}}">Cancel</a>
+            <input class="button" type="submit" value="Add">
+            <a class="button cancelButton" href="{{url_for('categoryPage', item_type=item.type)}}">Cancel</a>
         </form>
     </main>
 

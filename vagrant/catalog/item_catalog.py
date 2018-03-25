@@ -13,26 +13,14 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 
+# Queries assume there is only one catalog in the database
+
+
 @app.route("/")
 def homePage():
-	# These queries assume there is only one catalog in the database
 	recent_items = session.query(Item).order_by(desc(Item.time_created)).limit(10)
 	categories = [cls.__name__ for cls in Item.__subclasses__()]
-	output = "RECENT ITEMS <br>"
-	for r in recent_items:
-		output += "<a href="+url_for("itemPage", item_type=r.type, item_id=r.id)+">"
-		output += r.name
-		output += "<br>"
-		output += str(r.time_created)
-		output += "<br>"
-		output += "</a><br>"
-	output += "CATEGORIES <br>"
-	for c in categories:
-		output += "<a href="+url_for("categoryPage", item_type=c)+">"
-		output += "<br>"
-		output += c + "s"
-		output += "</a><br>"
-	return output
+	return render_template("index.html", items=recent_items, categories=categories)
 
 
 @app.route("/<item_type>/")
@@ -54,21 +42,7 @@ def categoryPage(item_type):
 def itemPage(item_type, item_id):
 	item = session.query(Item).filter(Item.id == item_id).first()
 	fields = getDisplayDict(item)
-	return render_template("item_page.html", fields=fields, item=item)
-
-	item = session.query(Item).filter(Item.id == item_id).first()
-	mapper = inspect(item)
-	output = ""
-	for col in mapper.attrs:
-		output += col.key + " : " + str(col.value)
-		output += "<br>"
-	output += "<a href="+url_for("editItem", item_type=item.type, item_id=item.id)+">"
-	output += "Edit"
-	output += "</a><br>"
-	output += "<a href="+url_for("deleteItemPage", item_type=item.type, item_id=item.id)+">"
-	output += "Delete"
-	output += "</a><br>"
-	return output
+	return render_template("item_page.html", item=item, fields=fields)
 
 
 @app.route("/<item_type>/new", methods=["GET", "POST"])

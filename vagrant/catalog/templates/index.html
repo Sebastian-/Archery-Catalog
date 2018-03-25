@@ -4,11 +4,42 @@
     <title>Archery Equipment Catalog</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='styles.css')}}">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300" rel="stylesheet">
+</head>
 <body>
 
-    <header></header>
+    <header>
+        <div class="headerContent">
+            <a id="header-title" href="{{url_for('homePage')}}"><h1>
+                ARCHERY EQUIPMENT CATALOG
+            </h1></a>
+            <a class="button loginButton" href="{{url_for('homePage')}}">Login</a>
+        </div>
+    </header>
 
-    <main></main>
+    <main>
+        <section class="categories">
+            <h2>
+                CATEGORIES
+            </h2>
+            {% for c in categories %}
+                <a class="categoryLink" href="{{url_for('categoryPage', item_type=c)}}">
+                    {{c}}
+                </a>
+            {% endfor %}
+        </section>
+        <section class="recentItems">
+            <h2 >
+                RECENT ITEMS
+            </h2>
+            {% for i in items %}
+                <a class="itemPreview" href="{{url_for('itemPage', item_type=i.type, item_id=i.id)}}">
+                    {{i.name}} - {{i.type}}
+                </a>
+            {% endfor %}
+        </section>
+    </main>
 
     <footer></footer>
 </body>
