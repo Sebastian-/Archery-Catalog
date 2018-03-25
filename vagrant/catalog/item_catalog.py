@@ -1,6 +1,7 @@
-import collections
+import collections, random, string
 
 from flask import Flask, url_for, render_template, request, redirect
+from flask import session as login_session
 from sqlalchemy import create_engine, desc, distinct, inspect
 from sqlalchemy.orm import sessionmaker
 
@@ -84,6 +85,16 @@ def deleteItemPage(item_type, item_id):
 		return render_template("delete_item.html", item_type=item_type, item=item)
 
 
+# Create anti-forgery state token
+@app.route("/login")
+def showLogin():
+    state = ''.join(random.choice(string.ascii_uppercase + string.digits)
+                    for x in xrange(32))
+    login_session['state'] = state
+    return "The current session state is %s" % login_session['state']
+
+
+
 def getDisplayDict(item):
 	"""Returns a dictionary containing the user-facing fields of an item.
 	Field names are formatted so that they contain no underscores and have
@@ -106,5 +117,6 @@ def formatFieldName(field, undo=False):
 
 
 if __name__ == '__main__':
+	app.secret_key = "Robin_Hood_was_here"
 	app.debug = True
 	app.run(host = '0.0.0.0', port = 8000)
