@@ -26,16 +26,7 @@ def homePage():
 @app.route("/<item_type>/")
 def categoryPage(item_type):
 	items = session.query(Item).filter(Item.type == item_type).order_by(desc(Item.time_created))
-	output = ""
-	for i in items:
-		output += "<a href="+url_for("itemPage", item_type=i.type, item_id=i.id)+">"
-		output += "<br>"
-		output += i.name
-		output += "</a><br>"
-	output += "<br><a href="+url_for("newItemPage", item_type=item_type)+">"
-	output += "New"
-	output += "</a><br>"
-	return output
+	return render_template("category_page.html", items=items, category=item_type)
 
 
 @app.route("/<item_type>/<int:item_id>/")

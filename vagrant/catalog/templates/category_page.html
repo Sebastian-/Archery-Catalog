@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Archery Equipment Catalog</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='styles.css')}}">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300" rel="stylesheet">
+</head>
+<body>
+
+    <header>
+        <div class="headerContent">
+            <a id="header-title" href="{{url_for('homePage')}}"><h1>
+                ARCHERY EQUIPMENT CATALOG
+            </h1></a>
+            <a class="button loginButton" href="{{url_for('homePage')}}">Login</a>
+        </div>
+    </header>
+
+    <main>
+        <section class="recentItems">
+            <h2 >
+                ALL {{category|upper()}}S
+            </h2>
+            {% for i in items %}
+                <a class="itemPreview" href="{{url_for('itemPage', item_type=i.type, item_id=i.id)}}">
+                    {{i.name}} - {{i.type}}
+                </a>
+            {% endfor %}
+        </section>
+    </main>
+
+    <footer></footer>
+</body>
+</html>

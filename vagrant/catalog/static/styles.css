@@ -204,6 +204,7 @@ dd, dt {
 .recentItems {
 	padding-left: 10px;
 	border-left: 3px solid rgba(54, 85, 127, .4);
+	height: 100vh;
 }
 
 h2 {
