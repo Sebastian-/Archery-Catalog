@@ -23,6 +23,9 @@
             <h2 >
                 ALL {{category|upper()}}S
             </h2>
+            <a class="newItemLink" href="{{url_for('newItemPage', item_type=category)}}">
+                Add a New {{category}}
+            </a>
             {% for i in items %}
                 <a class="itemPreview" href="{{url_for('itemPage', item_type=i.type, item_id=i.id)}}">
                     {{i.name}}
