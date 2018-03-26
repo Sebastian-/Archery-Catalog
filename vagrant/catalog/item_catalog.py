@@ -1,6 +1,6 @@
 import collections, random, string, json, requests, httplib2
 
-from flask import Flask, url_for, render_template, request, redirect, make_response
+from flask import Flask, url_for, render_template, request, redirect, make_response, flash
 from flask import session as login_session
 from sqlalchemy import create_engine, desc, distinct, inspect
 from sqlalchemy.orm import sessionmaker
@@ -15,6 +15,7 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 CLIENT_ID = json.loads(open("client_secrets.json", "r").read())["web"]["client_id"]
 
+
 # Queries assume there is only one catalog in the database
 
 
@@ -25,20 +26,20 @@ def homePage():
 	return render_template("index.html", items=recent_items, categories=categories)
 
 
-@app.route("/<item_type>/")
+@app.route("/category/<item_type>/")
 def categoryPage(item_type):
 	items = session.query(Item).filter(Item.type == item_type).order_by(desc(Item.time_created))
 	return render_template("category_page.html", items=items, category=item_type)
 
 
-@app.route("/<item_type>/<int:item_id>/")
+@app.route("/category/<item_type>/<int:item_id>/")
 def itemPage(item_type, item_id):
 	item = session.query(Item).filter(Item.id == item_id).first()
 	fields = getDisplayDict(item)
 	return render_template("item_page.html", item=item, fields=fields)
 
 
-@app.route("/<item_type>/new", methods=["GET", "POST"])
+@app.route("/category/<item_type>/new", methods=["GET", "POST"])
 def newItemPage(item_type):
 	constructor = globals()[item_type]
 	new_item = constructor()
@@ -54,7 +55,7 @@ def newItemPage(item_type):
 		return render_template("new_item.html", fields=fields, item=new_item)
 
 
-@app.route("/<item_type>/<int:item_id>/edit/", methods=["GET", "POST"])
+@app.route("/category/<item_type>/<int:item_id>/edit/", methods=["GET", "POST"])
 def editItem(item_type, item_id):
 	item = session.query(Item).filter(Item.id == item_id).first()
 	if not item:
@@ -72,7 +73,7 @@ def editItem(item_type, item_id):
 		return render_template("edit_item.html", fields=fields, item=item)
 
 
-@app.route("/<item_type>/<int:item_id>/delete", methods=["GET", "POST"])
+@app.route("/category/<item_type>/<int:item_id>/delete", methods=["GET", "POST"])
 def deleteItemPage(item_type, item_id):
 	item = session.query(Item).filter(Item.id == item_id).first()
 	if not item:
@@ -84,16 +85,6 @@ def deleteItemPage(item_type, item_id):
 		return redirect(url_for("categoryPage", item_type=item_type))
 	else:
 		return render_template("delete_item.html", item_type=item_type, item=item)
-
-
-# Create anti-forgery state token
-@app.route("/login")
-def showLogin():
-    state = ''.join(random.choice(string.ascii_uppercase + string.digits)
-                    for x in xrange(32))
-    login_session['state'] = state
-    return render_template("login.html", STATE=state, client_id=CLIENT_ID)
-
 
 
 def getDisplayDict(item):
@@ -115,6 +106,89 @@ def formatFieldName(field, undo=False):
 		return field.replace(" ","_").lower()
 	else:
 		return field.replace("_"," ").title()
+
+
+# Create anti-forgery state token
+@app.route("/login")
+def showLogin():
+    state = ''.join(random.choice(string.ascii_uppercase + string.digits)
+                    for x in xrange(32))
+    login_session['state'] = state
+    return render_template("login.html", STATE=state, client_id=CLIENT_ID, return_url=request.referrer)
+
+
+@app.route('/gconnect', methods=['POST'])
+def gconnect():
+    # Validate state token
+    if request.args.get('state') != login_session['state']:
+        response = make_response(json.dumps('Invalid state parameter.'), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+    # Obtain authorization code
+    code = request.data
+
+    try:
+        # Upgrade the authorization code into a credentials object
+        oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
+        oauth_flow.redirect_uri = 'postmessage'
+        credentials = oauth_flow.step2_exchange(code)
+    except FlowExchangeError:
+        response = make_response(
+            json.dumps('Failed to upgrade the authorization code.'), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    # Check that the access token is valid.
+    access_token = credentials.access_token
+    url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'
+           % access_token)
+    h = httplib2.Http()
+    result = json.loads(h.request(url, 'GET')[1])
+    # If there was an error in the access token info, abort.
+    if result.get('error') is not None:
+        response = make_response(json.dumps(result.get('error')), 500)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    # Verify that the access token is used for the intended user.
+    gplus_id = credentials.id_token['sub']
+    if result['user_id'] != gplus_id:
+        response = make_response(
+            json.dumps("Token's user ID doesn't match given user ID."), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    # Verify that the access token is valid for this app.
+    if result['issued_to'] != CLIENT_ID:
+        response = make_response(
+            json.dumps("Token's client ID does not match app's."), 401)
+        print "Token's client ID does not match app's."
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    stored_access_token = login_session.get('access_token')
+    stored_gplus_id = login_session.get('gplus_id')
+    if stored_access_token is not None and gplus_id == stored_gplus_id:
+        response = make_response(json.dumps('Current user is already connected.'),
+                                 200)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    # Store the access token in the session for later use.
+    login_session['access_token'] = credentials.access_token
+    login_session['gplus_id'] = gplus_id
+
+    # Get user info
+    userinfo_url = "https://www.googleapis.com/oauth2/v1/userinfo"
+    params = {'access_token': credentials.access_token, 'alt': 'json'}
+    answer = requests.get(userinfo_url, params=params)
+
+    data = answer.json()
+
+    login_session['username'] = data['name']
+    login_session['picture'] = data['picture']
+    login_session['email'] = data['email']
+    return
 
 
 if __name__ == '__main__':
