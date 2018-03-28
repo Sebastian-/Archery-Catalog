@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, desc, distinct, inspect
 from sqlalchemy.orm import sessionmaker
 from oauth2client.client import flow_from_clientsecrets, FlowExchangeError
 
-from database_setup import Base, Catalog, Item, Riser, Limb, Arrow, Plunger, Sight
+from database_setup import Base, Item, Riser, Limb, Arrow, Plunger, Sight, User
 
 app = Flask(__name__)
 engine = create_engine('sqlite:///archery_catalog.db')
@@ -14,9 +14,6 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 CLIENT_ID = json.loads(open("client_secrets.json", "r").read())["web"]["client_id"]
-
-
-# Queries assume there is only one catalog in the database
 
 
 @app.route("/")
@@ -97,7 +94,7 @@ def getDisplayDict(item):
 	"""Returns a dictionary containing the user-facing fields of an item.
 	Field names are formatted so that they contain no underscores and have
 	the first letter of each word capitalized."""
-	private_fields = ["id", "catalog_id", "time_created", "type", "catalog"]
+	private_fields = ["id", "catalog_id", "time_created", "type", "catalog", "user_id", "user"]
 	d = collections.OrderedDict()
 	mapper = inspect(item)
 	for col in mapper.attrs:
