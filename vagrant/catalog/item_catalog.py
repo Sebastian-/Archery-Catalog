@@ -41,6 +41,8 @@ def itemPage(item_type, item_id):
 
 @app.route("/category/<item_type>/new", methods=["GET", "POST"])
 def newItemPage(item_type):
+	if "username" not in login_session:
+		return redirect(url_for("showLogin"))
 	constructor = globals()[item_type]
 	new_item = constructor()
 	if request.method == "POST":
@@ -57,6 +59,8 @@ def newItemPage(item_type):
 
 @app.route("/category/<item_type>/<int:item_id>/edit/", methods=["GET", "POST"])
 def editItem(item_type, item_id):
+	if "username" not in login_session:
+		return redirect(url_for("showLogin"))
 	item = session.query(Item).filter(Item.id == item_id).first()
 	if not item:
 		return redirect(url_for("categoryPage", item_type=item.type))
@@ -75,6 +79,8 @@ def editItem(item_type, item_id):
 
 @app.route("/category/<item_type>/<int:item_id>/delete", methods=["GET", "POST"])
 def deleteItemPage(item_type, item_id):
+	if "username" not in login_session:
+		return redirect(url_for("showLogin"))
 	item = session.query(Item).filter(Item.id == item_id).first()
 	if not item:
 		# This handles the case where a user goes back and clicks cancel after already deleting an item
@@ -112,9 +118,10 @@ def formatFieldName(field, undo=False):
 # https://github.com/udacity/ud330/blob/master/Lesson2/step6/project.py
 
 
-# Create anti-forgery state token
+
 @app.route("/login")
 def showLogin():
+	# Create anti-forgery state token
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     login_session['state'] = state
