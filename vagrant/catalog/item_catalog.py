@@ -94,7 +94,7 @@ def getDisplayDict(item):
 	"""Returns a dictionary containing the user-facing fields of an item.
 	Field names are formatted so that they contain no underscores and have
 	the first letter of each word capitalized."""
-	private_fields = ["id", "catalog_id", "time_created", "type", "catalog", "user_id", "user"]
+	private_fields = ["id", "catalog_id", "time_created", "type", "catalog", "user_id"]
 	d = collections.OrderedDict()
 	mapper = inspect(item)
 	for col in mapper.attrs:

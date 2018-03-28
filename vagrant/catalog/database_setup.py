@@ -15,6 +15,8 @@ class User(Base):
     name = Column(String(250), nullable=False)
     email = Column(String(250), nullable=False)
     picture = Column(String(500))
+    items = relationship("Item", back_populates="user")
+
 
 
 class Item(Base):
@@ -26,7 +28,7 @@ class Item(Base):
     name = Column(String(250), nullable=False)
     type = Column(String(50))
     
-    user = relationship(User)
+    user = relationship("User", back_populates="items")
 
     __mapper_args__ = {
         'polymorphic_identity': 'item',
