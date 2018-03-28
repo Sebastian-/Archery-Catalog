@@ -10,7 +10,9 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 
-admin = User(id=1, name="Admin", email="admin@archerycatalog.com")
+admin = User(name="Admin", email="admin@archerycatalog.com")
+session.add(admin)
+session.commit()
 
 
 # Risers

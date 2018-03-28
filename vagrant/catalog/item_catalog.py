@@ -46,6 +46,7 @@ def newItemPage(item_type):
 		for key, value in request.form.items():
 			field_name = formatFieldName(key, undo=True)
 			setattr(new_item, field_name, value)
+		new_item.user_id = getUserID(login_session["email"])
 		session.add(new_item)
 		session.commit()
 		return redirect(url_for("categoryPage", item_type=item_type))
@@ -94,7 +95,7 @@ def getDisplayDict(item):
 	"""Returns a dictionary containing the user-facing fields of an item.
 	Field names are formatted so that they contain no underscores and have
 	the first letter of each word capitalized."""
-	private_fields = ["id", "catalog_id", "time_created", "type", "catalog", "user_id"]
+	private_fields = ["id", "catalog_id", "time_created", "type", "catalog", "user", "user_id"]
 	d = collections.OrderedDict()
 	mapper = inspect(item)
 	for col in mapper.attrs:
@@ -113,7 +114,6 @@ def formatFieldName(field, undo=False):
 
 # CODE PROVIDED BY UDACITY ----------------------------------------------------
 # https://github.com/udacity/ud330/blob/master/Lesson2/step6/project.py
-
 
 
 @app.route("/login")
@@ -197,6 +197,12 @@ def gconnect():
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
     
+    # Add user to database if they are not already present
+    user_id = getUserID(login_session['email'])
+    if not user_id:
+    	user_id = createUser(login_session)
+    login_session['user_id'] = user_id
+
     output = ''
     output += '<h1>Welcome, '
     output += login_session['username']
@@ -238,6 +244,28 @@ def gdisconnect():
         response = make_response(json.dumps('Failed to revoke token for given user.', 400))
         response.headers['Content-Type'] = 'application/json'
         return response
+
+
+def createUser(login_session):
+    newUser = User(name=login_session['username'], email=login_session[
+                   'email'], picture=login_session['picture'])
+    session.add(newUser)
+    session.commit()
+    user = session.query(User).filter_by(email=login_session['email']).one()
+    return user.id
+
+
+def getUserInfo(user_id):
+    user = session.query(User).filter_by(id=user_id).one()
+    return user
+
+
+def getUserID(email):
+    try:
+        user = session.query(User).filter_by(email=email).one()
+        return user.id
+    except:
+    	return None
 
 
 # CODE PROVIDED BY UDACITY ----------------------------------------------------
