@@ -10,7 +10,7 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 
-admin = User(name="Admin", email="admin@archerycatalog.com")
+admin = User(name="Admin", email="sebastian@hsmdev.com", picture="http://hsmdev.com/img/archery_catalog300px.png")
 session.add(admin)
 session.commit()
 

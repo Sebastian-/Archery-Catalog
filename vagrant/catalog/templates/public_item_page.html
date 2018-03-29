@@ -34,12 +34,8 @@
                 </dl>
             </section>
             <section class="userDetails">
-                <a class="button editButton" 
-                   href="{{url_for('editItem', item_type=item.type, item_id=item.id)}}">
-                Edit</a>
-                <a class="button deleteButton" 
-                   href="{{url_for('deleteItemPage', item_type=item.type, item_id=item.id)}}">
-                Delete</a>
+                <img class="userImage" src="{{item.user.picture}}">
+                <p class="userName">{{item.user.name}}</p>
             </section>
         </div>
     </main>

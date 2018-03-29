@@ -26,6 +26,8 @@ def homePage():
 @app.route("/category/<item_type>/")
 def categoryPage(item_type):
 	items = session.query(Item).filter(Item.type == item_type).order_by(desc(Item.time_created))
+	if "username" not in login_session:
+		return render_template("public_category_page.html", items=items, category=item_type)
 	return render_template("category_page.html", items=items, category=item_type)
 
 
@@ -33,6 +35,8 @@ def categoryPage(item_type):
 def itemPage(item_type, item_id):
 	item = session.query(Item).filter(Item.id == item_id).first()
 	fields = getDisplayDict(item)
+	if "username" not in login_session or item.user_id != login_session["user_id"]:
+		return render_template("public_item_page.html", item=item, fields=fields)
 	return render_template("item_page.html", item=item, fields=fields)
 
 
@@ -62,6 +66,10 @@ def editItem(item_type, item_id):
 	item = session.query(Item).filter(Item.id == item_id).first()
 	if not item:
 		return redirect(url_for("categoryPage", item_type=item.type))
+	if login_session["user_id"] != item.user_id:
+		# user is attempting to visit the edit url of an item that isn't theirs
+		flash("Cannot edit another user's item", "error")
+		return redirect(url_for("itemPage", item_type=item_type, item_id=item_id))
 	if request.method == "POST":
 		for key, value in request.form.items():
 			if value:
@@ -83,6 +91,10 @@ def deleteItemPage(item_type, item_id):
 	if not item:
 		# This handles the case where a user goes back and clicks cancel after already deleting an item
 		return redirect(url_for("categoryPage", item_type=item_type))
+	if login_session["user_id"] != item.user_id:
+		# user is attempting to visit the delete url of an item that isn't theirs
+		flash("Cannot delete another user's item", "error")
+		return redirect(url_for("itemPage", item_type=item_type, item_id=item_id))
 	if request.method == "POST":
 		session.delete(item)
 		session.commit()
