@@ -1,7 +1,6 @@
 import collections, random, string, json, requests, httplib2
 
-from flask import Flask, url_for, render_template, request, redirect, make_response, flash
-from flask import session as login_session
+from flask import Flask, url_for, render_template, request, redirect, make_response, flash, session
 from sqlalchemy import create_engine, desc, distinct, inspect
 from sqlalchemy.orm import sessionmaker
 from oauth2client.client import flow_from_clientsecrets, FlowExchangeError
@@ -12,37 +11,37 @@ app = Flask(__name__)
 engine = create_engine('sqlite:///archery_catalog.db')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
-session = DBSession()
+db = DBSession()
 CLIENT_ID = json.loads(open("client_secrets.json", "r").read())["web"]["client_id"]
 
 
 @app.route("/")
 def homePage():
-	recent_items = session.query(Item).order_by(desc(Item.time_created)).limit(10)
+	recent_items = db.query(Item).order_by(desc(Item.time_created)).limit(10)
 	categories = [cls.__name__ for cls in Item.__subclasses__()]
 	return render_template("index.html", items=recent_items, categories=categories)
 
 
 @app.route("/category/<item_type>/")
 def categoryPage(item_type):
-	items = session.query(Item).filter(Item.type == item_type).order_by(desc(Item.time_created))
-	if "username" not in login_session:
+	items = db.query(Item).filter(Item.type == item_type).order_by(desc(Item.time_created))
+	if "username" not in session:
 		return render_template("public_category_page.html", items=items, category=item_type)
 	return render_template("category_page.html", items=items, category=item_type)
 
 
 @app.route("/category/<item_type>/<int:item_id>/")
 def itemPage(item_type, item_id):
-	item = session.query(Item).filter(Item.id == item_id).first()
+	item = db.query(Item).filter(Item.id == item_id).first()
 	fields = getDisplayDict(item)
-	if "username" not in login_session or item.user_id != login_session["user_id"]:
+	if "username" not in session or item.user_id != session["user_id"]:
 		return render_template("public_item_page.html", item=item, fields=fields)
 	return render_template("item_page.html", item=item, fields=fields)
 
 
 @app.route("/category/<item_type>/new", methods=["GET", "POST"])
 def newItemPage(item_type):
-	if "username" not in login_session:
+	if "username" not in session:
 		return redirect(url_for("showLogin"))
 	constructor = globals()[item_type]
 	new_item = constructor()
@@ -50,9 +49,9 @@ def newItemPage(item_type):
 		for key, value in request.form.items():
 			field_name = formatFieldName(key, undo=True)
 			setattr(new_item, field_name, value)
-		new_item.user_id = getUserID(login_session["email"])
-		session.add(new_item)
-		session.commit()
+		new_item.user_id = getUserID(session["email"])
+		db.add(new_item)
+		db.commit()
 		return redirect(url_for("categoryPage", item_type=item_type))
 	else:
 		fields = getDisplayDict(new_item)
@@ -61,12 +60,12 @@ def newItemPage(item_type):
 
 @app.route("/category/<item_type>/<int:item_id>/edit/", methods=["GET", "POST"])
 def editItem(item_type, item_id):
-	if "username" not in login_session:
+	if "username" not in session:
 		return redirect(url_for("showLogin"))
-	item = session.query(Item).filter(Item.id == item_id).first()
+	item = db.query(Item).filter(Item.id == item_id).first()
 	if not item:
 		return redirect(url_for("categoryPage", item_type=item.type))
-	if login_session["user_id"] != item.user_id:
+	if session["user_id"] != item.user_id:
 		# user is attempting to visit the edit url of an item that isn't theirs
 		flash("Cannot edit another user's item", "error")
 		return redirect(url_for("itemPage", item_type=item_type, item_id=item_id))
@@ -75,8 +74,8 @@ def editItem(item_type, item_id):
 			if value:
 				field_name = formatFieldName(key, undo=True)
 				setattr(item, field_name, value)
-		session.add(item)
-		session.commit()
+		db.add(item)
+		db.commit()
 		return redirect(url_for("itemPage", item_type=item_type, item_id=item.id))
 	else:
 		fields = getDisplayDict(item)
@@ -85,19 +84,19 @@ def editItem(item_type, item_id):
 
 @app.route("/category/<item_type>/<int:item_id>/delete", methods=["GET", "POST"])
 def deleteItemPage(item_type, item_id):
-	if "username" not in login_session:
+	if "username" not in session:
 		return redirect(url_for("showLogin"))
-	item = session.query(Item).filter(Item.id == item_id).first()
+	item = db.query(Item).filter(Item.id == item_id).first()
 	if not item:
 		# This handles the case where a user goes back and clicks cancel after already deleting an item
 		return redirect(url_for("categoryPage", item_type=item_type))
-	if login_session["user_id"] != item.user_id:
+	if session["user_id"] != item.user_id:
 		# user is attempting to visit the delete url of an item that isn't theirs
 		flash("Cannot delete another user's item", "error")
 		return redirect(url_for("itemPage", item_type=item_type, item_id=item_id))
 	if request.method == "POST":
-		session.delete(item)
-		session.commit()
+		db.delete(item)
+		db.commit()
 		return redirect(url_for("categoryPage", item_type=item_type))
 	else:
 		return render_template("delete_item.html", item_type=item_type, item=item)
@@ -124,7 +123,7 @@ def formatFieldName(field, undo=False):
 		return field.replace("_"," ").title()
 
 
-# CODE PROVIDED BY UDACITY ----------------------------------------------------
+# CODE ADAPTED FROM UDACITY -------------------------------------------
 # https://github.com/udacity/ud330/blob/master/Lesson2/step6/project.py
 
 
@@ -133,14 +132,14 @@ def showLogin():
 	# Create anti-forgery state token
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
-    login_session['state'] = state
+    session['state'] = state
     return render_template("login.html", STATE=state, client_id=CLIENT_ID, return_url=request.referrer)
 
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     # Validate state token
-    if request.args.get('state') != login_session['state']:
+    if request.args.get('state') != session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
@@ -186,8 +185,8 @@ def gconnect():
         response.headers['Content-Type'] = 'application/json'
         return response
 
-    stored_access_token = login_session.get('access_token')
-    stored_gplus_id = login_session.get('gplus_id')
+    stored_access_token = session.get('access_token')
+    stored_gplus_id = session.get('gplus_id')
     if stored_access_token is not None and gplus_id == stored_gplus_id:
         response = make_response(json.dumps('Current user is already connected.'),
                                  200)
@@ -195,8 +194,8 @@ def gconnect():
         return response
 
     # Store the access token in the session for later use.
-    login_session['access_token'] = credentials.access_token
-    login_session['gplus_id'] = gplus_id
+    session['access_token'] = credentials.access_token
+    session['gplus_id'] = gplus_id
 
     # Get user info
     userinfo_url = "https://www.googleapis.com/oauth2/v1/userinfo"
@@ -205,31 +204,31 @@ def gconnect():
 
     data = answer.json()
 
-    login_session['username'] = data['name']
-    login_session['picture'] = data['picture']
-    login_session['email'] = data['email']
+    session['username'] = data['name']
+    session['picture'] = data['picture']
+    session['email'] = data['email']
     
     # Add user to database if they are not already present
-    user_id = getUserID(login_session['email'])
+    user_id = getUserID(session['email'])
     if not user_id:
-    	user_id = createUser(login_session)
-    login_session['user_id'] = user_id
+    	user_id = createUser(session)
+    session['user_id'] = user_id
 
     output = ''
     output += '<h1>Welcome, '
-    output += login_session['username']
+    output += session['username']
     output += '!</h1>'
     output += '<img src="'
-    output += login_session['picture']
+    output += session['picture']
     output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
-    flash("you are now logged in as %s" % login_session['username'])
+    flash("you are now logged in as %s" % session['username'])
     print "done!"
     return output 
 
 
 @app.route('/gdisconnect')
 def gdisconnect():
-    access_token = login_session.get('access_token')
+    access_token = session.get('access_token')
     if access_token is None:
         print 'Access Token is None'
         response = make_response(json.dumps('Current user not connected.'), 401)
@@ -237,18 +236,18 @@ def gdisconnect():
         return response
     print 'In gdisconnect access token is %s', access_token
     print 'User name is: '
-    print login_session['username']
-    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % login_session['access_token']
+    print session['username']
+    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % session['access_token']
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
     print 'result is '
     print result
     if result['status'] == '200':
-        del login_session['access_token']
-        del login_session['gplus_id']
-        del login_session['username']
-        del login_session['email']
-        del login_session['picture']
+        del session['access_token']
+        del session['gplus_id']
+        del session['username']
+        del session['email']
+        del session['picture']
         response = make_response(json.dumps('Successfully disconnected.'), 200)
         response.headers['Content-Type'] = 'application/json'
         return response
@@ -258,29 +257,29 @@ def gdisconnect():
         return response
 
 
-def createUser(login_session):
-    newUser = User(name=login_session['username'], email=login_session[
-                   'email'], picture=login_session['picture'])
-    session.add(newUser)
-    session.commit()
-    user = session.query(User).filter_by(email=login_session['email']).one()
+def createUser(session):
+    newUser = User(name=session['username'], email=session[
+                   'email'], picture=session['picture'])
+    db.add(newUser)
+    db.commit()
+    user = db.query(User).filter_by(email=session['email']).one()
     return user.id
 
 
 def getUserInfo(user_id):
-    user = session.query(User).filter_by(id=user_id).one()
+    user = db.query(User).filter_by(id=user_id).one()
     return user
 
 
 def getUserID(email):
     try:
-        user = session.query(User).filter_by(email=email).one()
+        user = db.query(User).filter_by(email=email).one()
         return user.id
     except:
     	return None
 
 
-# CODE PROVIDED BY UDACITY ----------------------------------------------------
+# CODE ADAPTED FROM UDACITY -------------------------------------------
 # https://github.com/udacity/ud330/blob/master/Lesson2/step6/project.py
 
 
