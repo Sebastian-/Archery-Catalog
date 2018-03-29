@@ -61,7 +61,7 @@ input[type=submit][value=Edit] {
 
 .loginButton {
     background-color: #4286f4;
-    width: 20vw;
+    min-width: 20vw;
 }
 
 .cancelButton {
@@ -237,9 +237,21 @@ h2 {
 	justify-content: center;
 }
 
+.flash {
+	margin:auto;
+	text-align: center;
+	font-size: 22px;
+	padding: 5px;
+}
+
+.status {
+	background-color: #4286f4;
+}
+
 /* Mobile */
 @media screen and (max-width: 676px) {
     .itemHeading {font-size: 20px;}
+    .recentItems {height: 100%;}
     main {flex-flow: column;}
 }
 

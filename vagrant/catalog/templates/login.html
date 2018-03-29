@@ -29,7 +29,7 @@
             data-accesstype="offline"
             data-cookiepolicy="single_host_origin"
             data-callback="signInCallback"
-            data-approvalprompt="force">
+            prompt="consent">
         </span>
     </div>
 
@@ -52,7 +52,7 @@
                     if (result) {
                         $('#result').html('Login Successful!</br>'+ result + '</br>Redirecting...')
                         setTimeout(function() {
-                            window.location.href = "{{return_url}}";
+                            window.location.href = "{% if return_url %}{{return_url}}{% else %}{{url_for('homePage')}}{% endif %}";
                         }, 2000);
                     } else if (authResult['error']) {
                         console.log('There was an error: ' + authResult['error']);

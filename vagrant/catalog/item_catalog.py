@@ -17,110 +17,113 @@ CLIENT_ID = json.loads(open("client_secrets.json", "r").read())["web"]["client_i
 
 @app.route("/")
 def homePage():
-	recent_items = db.query(Item).order_by(desc(Item.time_created)).limit(10)
-	categories = [cls.__name__ for cls in Item.__subclasses__()]
-	return render_template("index.html", items=recent_items, categories=categories)
+    recent_items = db.query(Item).order_by(desc(Item.time_created)).limit(10)
+    categories = [cls.__name__ for cls in Item.__subclasses__()]
+    return render_template("index.html", items=recent_items, categories=categories)
 
 
 @app.route("/category/<item_type>/")
 def categoryPage(item_type):
-	items = db.query(Item).filter(Item.type == item_type).order_by(desc(Item.time_created))
-	if "username" not in session:
-		return render_template("public_category_page.html", items=items, category=item_type)
-	return render_template("category_page.html", items=items, category=item_type)
+    items = db.query(Item).filter(Item.type == item_type).order_by(desc(Item.time_created))
+    if "username" not in session:
+        return render_template("public_category_page.html", items=items, category=item_type)
+    return render_template("category_page.html", items=items, category=item_type)
 
 
 @app.route("/category/<item_type>/<int:item_id>/")
 def itemPage(item_type, item_id):
-	item = db.query(Item).filter(Item.id == item_id).first()
-	fields = getDisplayDict(item)
-	if "username" not in session or item.user_id != session["user_id"]:
-		return render_template("public_item_page.html", item=item, fields=fields)
-	return render_template("item_page.html", item=item, fields=fields)
+    item = db.query(Item).filter(Item.id == item_id).first()
+    fields = getDisplayDict(item)
+    if "username" not in session or item.user_id != session["user_id"]:
+        return render_template("public_item_page.html", item=item, fields=fields)
+    return render_template("item_page.html", item=item, fields=fields)
 
 
 @app.route("/category/<item_type>/new", methods=["GET", "POST"])
 def newItemPage(item_type):
-	if "username" not in session:
-		return redirect(url_for("showLogin"))
-	constructor = globals()[item_type]
-	new_item = constructor()
-	if request.method == "POST":
-		for key, value in request.form.items():
-			field_name = formatFieldName(key, undo=True)
-			setattr(new_item, field_name, value)
-		new_item.user_id = getUserID(session["email"])
-		db.add(new_item)
-		db.commit()
-		return redirect(url_for("categoryPage", item_type=item_type))
-	else:
-		fields = getDisplayDict(new_item)
-		return render_template("new_item.html", fields=fields, item=new_item)
+    if "username" not in session:
+        return redirect(url_for("showLogin"))
+    constructor = globals()[item_type]
+    new_item = constructor()
+    if request.method == "POST":
+        for key, value in request.form.items():
+            field_name = formatFieldName(key, undo=True)
+            setattr(new_item, field_name, value)
+        new_item.user_id = getUserID(session["email"])
+        db.add(new_item)
+        db.commit()
+        flash("Successfully added %s." % new_item.name, "status")
+        return redirect(url_for("categoryPage", item_type=item_type))
+    else:
+        fields = getDisplayDict(new_item)
+        return render_template("new_item.html", fields=fields, item=new_item)
 
 
 @app.route("/category/<item_type>/<int:item_id>/edit/", methods=["GET", "POST"])
 def editItem(item_type, item_id):
-	if "username" not in session:
-		return redirect(url_for("showLogin"))
-	item = db.query(Item).filter(Item.id == item_id).first()
-	if not item:
-		return redirect(url_for("categoryPage", item_type=item.type))
-	if session["user_id"] != item.user_id:
-		# user is attempting to visit the edit url of an item that isn't theirs
-		flash("Cannot edit another user's item", "error")
-		return redirect(url_for("itemPage", item_type=item_type, item_id=item_id))
-	if request.method == "POST":
-		for key, value in request.form.items():
-			if value:
-				field_name = formatFieldName(key, undo=True)
-				setattr(item, field_name, value)
-		db.add(item)
-		db.commit()
-		return redirect(url_for("itemPage", item_type=item_type, item_id=item.id))
-	else:
-		fields = getDisplayDict(item)
-		return render_template("edit_item.html", fields=fields, item=item)
+    if "username" not in session:
+        return redirect(url_for("showLogin"))
+    item = db.query(Item).filter(Item.id == item_id).first()
+    if not item:
+        return redirect(url_for("categoryPage", item_type=item.type))
+    if session["user_id"] != item.user_id:
+        # user is attempting to visit the edit url of an item that isn't theirs
+        flash("Cannot edit another user's item", "status")
+        return redirect(url_for("itemPage", item_type=item_type, item_id=item_id))
+    if request.method == "POST":
+        for key, value in request.form.items():
+            if value:
+                field_name = formatFieldName(key, undo=True)
+                setattr(item, field_name, value)
+        db.add(item)
+        db.commit()
+        flash("Successfully updated %s." % item.name, "status")
+        return redirect(url_for("itemPage", item_type=item_type, item_id=item.id))
+    else:
+        fields = getDisplayDict(item)
+        return render_template("edit_item.html", fields=fields, item=item)
 
 
 @app.route("/category/<item_type>/<int:item_id>/delete", methods=["GET", "POST"])
 def deleteItemPage(item_type, item_id):
-	if "username" not in session:
-		return redirect(url_for("showLogin"))
-	item = db.query(Item).filter(Item.id == item_id).first()
-	if not item:
-		# This handles the case where a user goes back and clicks cancel after already deleting an item
-		return redirect(url_for("categoryPage", item_type=item_type))
-	if session["user_id"] != item.user_id:
-		# user is attempting to visit the delete url of an item that isn't theirs
-		flash("Cannot delete another user's item", "error")
-		return redirect(url_for("itemPage", item_type=item_type, item_id=item_id))
-	if request.method == "POST":
-		db.delete(item)
-		db.commit()
-		return redirect(url_for("categoryPage", item_type=item_type))
-	else:
-		return render_template("delete_item.html", item_type=item_type, item=item)
+    if "username" not in session:
+        return redirect(url_for("showLogin"))
+    item = db.query(Item).filter(Item.id == item_id).first()
+    if not item:
+        # This handles the case where a user goes back and clicks cancel after already deleting an item
+        return redirect(url_for("categoryPage", item_type=item_type))
+    if session["user_id"] != item.user_id:
+        # user is attempting to visit the delete url of an item that isn't theirs
+        flash("Cannot delete another user's item.", "status")
+        return redirect(url_for("itemPage", item_type=item_type, item_id=item_id))
+    if request.method == "POST":
+        db.delete(item)
+        db.commit()
+        flash("Successfully deleted %s." % item.name, "status")
+        return redirect(url_for("categoryPage", item_type=item_type))
+    else:
+        return render_template("delete_item.html", item_type=item_type, item=item)
 
 
 def getDisplayDict(item):
-	"""Returns a dictionary containing the user-facing fields of an item.
-	Field names are formatted so that they contain no underscores and have
-	the first letter of each word capitalized."""
-	private_fields = ["id", "catalog_id", "time_created", "type", "catalog", "user", "user_id"]
-	d = collections.OrderedDict()
-	mapper = inspect(item)
-	for col in mapper.attrs:
-		if col.key not in private_fields:
-			key = formatFieldName(str(col.key))
-			d[key] = str(col.value)
-	return d
+    """Returns a dictionary containing the user-facing fields of an item.
+    Field names are formatted so that they contain no underscores and have
+    the first letter of each word capitalized."""
+    private_fields = ["id", "catalog_id", "time_created", "type", "catalog", "user", "user_id"]
+    d = collections.OrderedDict()
+    mapper = inspect(item)
+    for col in mapper.attrs:
+        if col.key not in private_fields:
+            key = formatFieldName(str(col.key))
+            d[key] = str(col.value)
+    return d
 
 
 def formatFieldName(field, undo=False):
-	if undo:
-		return field.replace(" ","_").lower()
-	else:
-		return field.replace("_"," ").title()
+    if undo:
+        return field.replace(" ","_").lower()
+    else:
+        return field.replace("_"," ").title()
 
 
 # CODE ADAPTED FROM UDACITY -------------------------------------------
@@ -129,7 +132,7 @@ def formatFieldName(field, undo=False):
 
 @app.route("/login")
 def showLogin():
-	# Create anti-forgery state token
+    # Create anti-forgery state token
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     session['state'] = state
@@ -211,7 +214,7 @@ def gconnect():
     # Add user to database if they are not already present
     user_id = getUserID(session['email'])
     if not user_id:
-    	user_id = createUser(session)
+        user_id = createUser(session)
     session['user_id'] = user_id
 
     output = ''
@@ -221,19 +224,16 @@ def gconnect():
     output += '<img src="'
     output += session['picture']
     output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
-    flash("you are now logged in as %s" % session['username'])
     print "done!"
-    return output 
+    return output
 
 
 @app.route('/gdisconnect')
 def gdisconnect():
     access_token = session.get('access_token')
     if access_token is None:
-        print 'Access Token is None'
-        response = make_response(json.dumps('Current user not connected.'), 401)
-        response.headers['Content-Type'] = 'application/json'
-        return response
+        flash("No user is logged in.", "status")
+        return redirect(request.referrer)
     print 'In gdisconnect access token is %s', access_token
     print 'User name is: '
     print session['username']
@@ -248,13 +248,11 @@ def gdisconnect():
         del session['username']
         del session['email']
         del session['picture']
-        response = make_response(json.dumps('Successfully disconnected.'), 200)
-        response.headers['Content-Type'] = 'application/json'
-        return response
+        flash("Successfully signed out.", "status")
+        return redirect(request.referrer)
     else:
-        response = make_response(json.dumps('Failed to revoke token for given user.', 400))
-        response.headers['Content-Type'] = 'application/json'
-        return response
+        flash("Failed to revoke token for current user.", "status")
+        return redirect(request.referrer)
 
 
 def createUser(session):
@@ -276,7 +274,7 @@ def getUserID(email):
         user = db.query(User).filter_by(email=email).one()
         return user.id
     except:
-    	return None
+        return None
 
 
 # CODE ADAPTED FROM UDACITY -------------------------------------------
@@ -284,6 +282,6 @@ def getUserID(email):
 
 
 if __name__ == '__main__':
-	app.secret_key = "Robin_Hood_was_here"
-	app.debug = True
-	app.run(host = '0.0.0.0', port = 8000)
+    app.secret_key = "Robin_Hood_was_here"
+    app.debug = True
+    app.run(host = '0.0.0.0', port = 8000)
