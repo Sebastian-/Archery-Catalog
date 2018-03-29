@@ -1,49 +1,26 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Archery Equipment Catalog</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='styles.css')}}">
-    <link href="https://fonts.googleapis.com/css?family=Roboto:300" rel="stylesheet">
-</head>
-<body>
-
-    <header>
-        <div class="headerContent">
-            <a id="header-title" href="{{url_for('homePage')}}"><h1>
-                ARCHERY EQUIPMENT CATALOG
-            </h1></a>
-            <a class="button loginButton" href="{{url_for('showLogin')}}">Login</a>
-        </div>
-    </header>
-
-    <main>
-        <article class="itemCard">
-            <section class="itemDetails">
-                <h3 class="itemHeading">{{fields["Name"]}} - {{item.type}}</h3>
-                <dl class="itemDL">
-                {% for key, value in fields.items() if key != "Name" %}
-                    <div><dt>
-                        {{key}}
-                    </dt>
-                    <dd>
-                        {{value}}
-                    </dd></div>
-                {% endfor %}
-                </dl>
-            </section>
-            <section class="userDetails">
-                <a class="button editButton" 
-                   href="{{url_for('editItem', item_type=item.type, item_id=item.id)}}">
-                Edit</a>
-                <a class="button deleteButton" 
-                   href="{{url_for('deleteItemPage', item_type=item.type, item_id=item.id)}}">
-                Delete</a>
-            </section>
-        </div>
-    </main>
-
-    <footer></footer>
-</body>
-</html>
+{% extends "layout.html" %}
+{% block content %}
+    <article class="itemCard">
+        <section class="itemDetails">
+            <h3 class="itemHeading">{{fields["Name"]}} - {{item.type}}</h3>
+            <dl class="itemDL">
+            {% for key, value in fields.items() if key != "Name" %}
+                <div><dt>
+                    {{key}}
+                </dt>
+                <dd>
+                    {{value}}
+                </dd></div>
+            {% endfor %}
+            </dl>
+        </section>
+        <section class="userDetails">
+            <a class="button editButton" 
+               href="{{url_for('editItem', item_type=item.type, item_id=item.id)}}">
+            Edit</a>
+            <a class="button deleteButton" 
+               href="{{url_for('deleteItemPage', item_type=item.type, item_id=item.id)}}">
+            Delete</a>
+        </section>
+    </article>
+{% endblock content %}
