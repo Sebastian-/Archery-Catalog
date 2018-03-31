@@ -61,7 +61,7 @@ input[type=submit][value=Edit] {
 
 .loginButton {
     background-color: #4286f4;
-    min-width: 20vw;
+    min-width: 10vw;
 }
 
 .cancelButton {

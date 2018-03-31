@@ -1,6 +1,6 @@
 import collections, random, string, json, requests, httplib2
 
-from flask import Flask, url_for, render_template, request, redirect, make_response, flash, session
+from flask import Flask, url_for, render_template, request, redirect, make_response, flash, session, jsonify
 from sqlalchemy import create_engine, desc, distinct, inspect
 from sqlalchemy.orm import sessionmaker
 from oauth2client.client import flow_from_clientsecrets, FlowExchangeError
@@ -20,6 +20,12 @@ def homePage():
     recent_items = db.query(Item).order_by(desc(Item.time_created)).limit(10)
     categories = [cls.__name__ for cls in Item.__subclasses__()]
     return render_template("index.html", items=recent_items, categories=categories)
+
+
+@app.route("/catalog.json")
+def jsonAllItems():
+    items = db.query(Item).all()
+    return jsonify(Items=[i.serialize for i in items])
 
 
 @app.route("/category/<item_type>/")

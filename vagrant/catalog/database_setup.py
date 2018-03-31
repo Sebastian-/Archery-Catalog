@@ -49,6 +49,17 @@ class Riser(Item):
         'polymorphic_identity': 'Riser',
     }
 
+    @property
+    def serialize(self):
+        return {
+            "type": self.type,
+            "name": self.name,
+            "color": self.color,
+            "length": self.length,
+            "handedness": self.handedness,
+            "made_of": self.made_of,
+        }
+
 
 class Arrow(Item):
     __tablename__ = 'Arrow'
@@ -63,6 +74,17 @@ class Arrow(Item):
         'polymorphic_identity': 'Arrow',
     }
 
+    @property
+    def serialize(self):
+        return {
+            "type": self.type,
+            "name": self.name,
+            "spine": self.spine,
+            "length": self.length,
+            "made of": self.made_of,
+            "point_weight": self.point_weight,
+        }
+
 
 class Limb(Item):
     __tablename__ = 'Limb'
@@ -76,6 +98,16 @@ class Limb(Item):
         'polymorphic_identity': 'Limb',
     }
 
+    @property
+    def serialize(self):
+        return {
+            "type": self.type,
+            "name": self.name,
+            "draw_weight": self.draw_weight,
+            "length": self.length,
+            "made_of": self.made_of,
+        }
+
 
 class Plunger(Item):
     __tablename__ = 'Plunger'
@@ -87,6 +119,14 @@ class Plunger(Item):
         'polymorphic_identity': 'Plunger',
     }
 
+    @property
+    def serialize(self):
+        return {
+            "type": self.type,
+            "name": self.name,
+            "color": self.color,
+        }
+
 
 class Sight(Item):
     __tablename__ = 'Sight'
@@ -97,6 +137,14 @@ class Sight(Item):
     __mapper_args__ = {
         'polymorphic_identity': 'Sight',
     }
+
+    @property
+    def serialize(self):
+        return {
+            "type" : self.type,
+            "name" : self.name,
+            "handedness": self.handedness,
+        }
 
 
 engine = create_engine('sqlite:///archery_catalog.db')
