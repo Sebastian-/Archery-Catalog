@@ -18,7 +18,6 @@ class User(Base):
     items = relationship("Item", back_populates="user")
 
 
-
 class Item(Base):
     __tablename__ = 'item'
 
@@ -27,7 +26,7 @@ class Item(Base):
     time_created = Column(DateTime(timezone=True), server_default=func.now())
     name = Column(String(250), nullable=False)
     type = Column(String(50))
-    
+
     user = relationship("User", back_populates="items")
 
     __mapper_args__ = {
@@ -141,8 +140,8 @@ class Sight(Item):
     @property
     def serialize(self):
         return {
-            "type" : self.type,
-            "name" : self.name,
+            "type": self.type,
+            "name": self.name,
             "handedness": self.handedness,
         }
 

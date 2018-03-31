@@ -10,7 +10,8 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 
-admin = User(name="Admin", email="sebastian@hsmdev.com", picture="http://hsmdev.com/img/archery_catalog300px.png")
+admin = User(name="Admin", email="sebastian@hsmdev.com",
+             picture="http://hsmdev.com/img/archery_catalog300px.png")
 session.add(admin)
 session.commit()
 
@@ -59,19 +60,19 @@ time.sleep(1)
 
 # Limbs
 limb1 = Limb(name="MK Inpers", draw_weight="36 lb", length="Medium",
-             made_of="Wood/Carbon",user_id=1)
+             made_of="Wood/Carbon", user_id=1)
 session.add(limb1)
 session.commit()
 time.sleep(1)
 
 limb2 = Limb(name="Uukha XX", draw_weight="40 lb", length="Long",
-             made_of="Carbon",user_id=1)
+             made_of="Carbon", user_id=1)
 session.add(limb2)
 session.commit()
 time.sleep(1)
 
 limb3 = Limb(name="Hoyt Grand Prix", draw_weight="32 lb", length="Short",
-             made_of="Carbon/Bamboo",user_id=1)
+             made_of="Carbon/Bamboo", user_id=1)
 session.add(limb3)
 session.commit()
 time.sleep(1)

@@ -1,6 +1,12 @@
-import collections, random, string, json, requests, httplib2
+import collections
+import random
+import string
+import json
+import requests
+import httplib2
 
-from flask import Flask, url_for, render_template, request, redirect, make_response, flash, session, jsonify
+from flask import Flask, url_for, render_template, request, redirect,\
+    make_response, flash, session, jsonify
 from sqlalchemy import create_engine, desc, distinct, inspect
 from sqlalchemy.orm import sessionmaker
 from oauth2client.client import flow_from_clientsecrets, FlowExchangeError
@@ -12,41 +18,54 @@ engine = create_engine('sqlite:///archery_catalog.db')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 db = DBSession()
-CLIENT_ID = json.loads(open("client_secrets.json", "r").read())["web"]["client_id"]
+CLIENT_ID = (json.loads(open("client_secrets.json", "r")
+             .read())["web"]["client_id"])
 
 
 @app.route("/")
 def homePage():
     recent_items = db.query(Item).order_by(desc(Item.time_created)).limit(10)
+    # Retrieve categories from class heirarchy rather than the database to
+    # account for cases when all items in a category are deleted
     categories = [cls.__name__ for cls in Item.__subclasses__()]
-    return render_template("index.html", items=recent_items, categories=categories)
+    return render_template("index.html", items=recent_items,
+                           categories=categories)
 
 
 @app.route("/catalog.json")
 def jsonAllItems():
+    """JSON endpoint providing info on all items"""
     items = db.query(Item).all()
     return jsonify(Items=[i.serialize for i in items])
 
 
 @app.route("/category/<item_type>/")
 def categoryPage(item_type):
-    items = db.query(Item).filter(Item.type == item_type).order_by(desc(Item.time_created))
+    """Renders an HTML page containing all items of a given type"""
+    items = (db.query(Item)
+               .filter(Item.type == item_type)
+               .order_by(desc(Item.time_created)))
     if "username" not in session:
-        return render_template("public_category_page.html", items=items, category=item_type)
-    return render_template("category_page.html", items=items, category=item_type)
+        return render_template("public_category_page.html", items=items,
+                               category=item_type)
+    return render_template("category_page.html", items=items,
+                           category=item_type)
 
 
 @app.route("/category/<item_type>/<int:item_id>/")
 def itemPage(item_type, item_id):
+    """Renders an HTML page displaying all user-facing properties of an item"""
     item = db.query(Item).filter(Item.id == item_id).first()
     fields = getDisplayDict(item)
     if "username" not in session or item.user_id != session["user_id"]:
-        return render_template("public_item_page.html", item=item, fields=fields)
+        return render_template("public_item_page.html", item=item,
+                               fields=fields)
     return render_template("item_page.html", item=item, fields=fields)
 
 
 @app.route("/category/<item_type>/new", methods=["GET", "POST"])
 def newItemPage(item_type):
+    """Renders and responds to the HTML form for creating a new item"""
     if "username" not in session:
         return redirect(url_for("showLogin"))
     constructor = globals()[item_type]
@@ -65,8 +84,10 @@ def newItemPage(item_type):
         return render_template("new_item.html", fields=fields, item=new_item)
 
 
-@app.route("/category/<item_type>/<int:item_id>/edit/", methods=["GET", "POST"])
+@app.route("/category/<item_type>/<int:item_id>/edit/",
+           methods=["GET", "POST"])
 def editItem(item_type, item_id):
+    """Renders and responds to the HTML form for editing an existing item"""
     if "username" not in session:
         return redirect(url_for("showLogin"))
     item = db.query(Item).filter(Item.id == item_id).first()
@@ -75,7 +96,8 @@ def editItem(item_type, item_id):
     if session["user_id"] != item.user_id:
         # user is attempting to visit the edit url of an item that isn't theirs
         flash("Cannot edit another user's item", "status")
-        return redirect(url_for("itemPage", item_type=item_type, item_id=item_id))
+        return redirect(url_for("itemPage", item_type=item_type,
+                                item_id=item_id))
     if request.method == "POST":
         for key, value in request.form.items():
             if value:
@@ -84,38 +106,42 @@ def editItem(item_type, item_id):
         db.add(item)
         db.commit()
         flash("Successfully updated %s." % item.name, "status")
-        return redirect(url_for("itemPage", item_type=item_type, item_id=item.id))
+        return redirect(url_for("itemPage", item_type=item_type,
+                                item_id=item.id))
     else:
         fields = getDisplayDict(item)
         return render_template("edit_item.html", fields=fields, item=item)
 
 
-@app.route("/category/<item_type>/<int:item_id>/delete", methods=["GET", "POST"])
+@app.route("/category/<item_type>/<int:item_id>/delete",
+           methods=["GET", "POST"])
 def deleteItemPage(item_type, item_id):
+    """Renders and responds to the HTML form for deleting an existing item"""
     if "username" not in session:
         return redirect(url_for("showLogin"))
     item = db.query(Item).filter(Item.id == item_id).first()
     if not item:
-        # This handles the case where a user goes back and clicks cancel after already deleting an item
+        # For when a user attempts to revist an already deleted item
         return redirect(url_for("categoryPage", item_type=item_type))
     if session["user_id"] != item.user_id:
-        # user is attempting to visit the delete url of an item that isn't theirs
+        # user is attempting to delete an item which they did not create
         flash("Cannot delete another user's item.", "status")
-        return redirect(url_for("itemPage", item_type=item_type, item_id=item_id))
+        return redirect(url_for("itemPage", item_type=item_type,
+                                item_id=item_id))
     if request.method == "POST":
         db.delete(item)
         db.commit()
         flash("Successfully deleted %s." % item.name, "status")
         return redirect(url_for("categoryPage", item_type=item_type))
     else:
-        return render_template("delete_item.html", item_type=item_type, item=item)
+        return render_template("delete_item.html", item_type=item_type,
+                               item=item)
 
 
 def getDisplayDict(item):
-    """Returns a dictionary containing the user-facing fields of an item.
-    Field names are formatted so that they contain no underscores and have
-    the first letter of each word capitalized."""
-    private_fields = ["id", "catalog_id", "time_created", "type", "catalog", "user", "user_id"]
+    """Returns a dictionary containing the user-facing fields of an item."""
+    private_fields = ["id", "catalog_id", "time_created", "type", "catalog",
+                      "user", "user_id"]
     d = collections.OrderedDict()
     mapper = inspect(item)
     for col in mapper.attrs:
@@ -126,10 +152,11 @@ def getDisplayDict(item):
 
 
 def formatFieldName(field, undo=False):
+    """Formats item field names for display on wepage"""
     if undo:
-        return field.replace(" ","_").lower()
+        return field.replace(" ", "_").lower()
     else:
-        return field.replace("_"," ").title()
+        return field.replace("_", " ").title()
 
 
 # CODE ADAPTED FROM UDACITY -------------------------------------------
@@ -142,7 +169,8 @@ def showLogin():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     session['state'] = state
-    return render_template("login.html", STATE=state, client_id=CLIENT_ID, return_url=request.referrer)
+    return render_template("login.html", STATE=state, client_id=CLIENT_ID,
+                           return_url=request.referrer)
 
 
 @app.route('/gconnect', methods=['POST'])
@@ -197,8 +225,8 @@ def gconnect():
     stored_access_token = session.get('access_token')
     stored_gplus_id = session.get('gplus_id')
     if stored_access_token is not None and gplus_id == stored_gplus_id:
-        response = make_response(json.dumps('Current user is already connected.'),
-                                 200)
+        response = make_response(
+            json.dumps('Current user is already connected.'), 200)
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -216,7 +244,7 @@ def gconnect():
     session['username'] = data['name']
     session['picture'] = data['picture']
     session['email'] = data['email']
-    
+
     # Add user to database if they are not already present
     user_id = getUserID(session['email'])
     if not user_id:
@@ -229,7 +257,8 @@ def gconnect():
     output += '!</h1>'
     output += '<img src="'
     output += session['picture']
-    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;" '
+    output += ' "-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
     print "done!"
     return output
 
@@ -243,7 +272,8 @@ def gdisconnect():
     print 'In gdisconnect access token is %s', access_token
     print 'User name is: '
     print session['username']
-    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % session['access_token']
+    url = ('https://accounts.google.com/o/oauth2/revoke?token=%s'
+           % session['access_token'])
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
     print 'result is '
@@ -279,7 +309,7 @@ def getUserID(email):
     try:
         user = db.query(User).filter_by(email=email).one()
         return user.id
-    except:
+    except Exception:
         return None
 
 
@@ -290,4 +320,4 @@ def getUserID(email):
 if __name__ == '__main__':
     app.secret_key = "Robin_Hood_was_here"
     app.debug = True
-    app.run(host = '0.0.0.0', port = 8000)
+    app.run(host='0.0.0.0', port=8000)
