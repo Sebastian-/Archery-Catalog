@@ -39,6 +39,6 @@ A Flask web application used to catalog commonly used archery equipment.
 8. Enter `python item_calaog.py` to begin running the server.
 9. Visit http://localhost:8000 to view the catalog and http://localhost:8000/catalog.json for JSON requests.
 
-## Atributions
+## Attributions
 
 All vagrant-related setup files were provided by Udacity at https://github.com/udacity/fullstack-nanodegree-vm
