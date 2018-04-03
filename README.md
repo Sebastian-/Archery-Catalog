@@ -2,6 +2,8 @@
 
 A Flask web application used to catalog commonly used archery equipment.
 
+<img src="screenshots/homepage.png">
+
 ## Features
 
 * Supports CRUD operations on catalog items by authenitcated users.
