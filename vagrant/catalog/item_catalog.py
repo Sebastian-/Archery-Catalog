@@ -8,16 +8,17 @@ import httplib2
 from flask import Flask, url_for, render_template, request, redirect,\
     make_response, flash, session, jsonify
 from sqlalchemy import create_engine, desc, distinct, inspect
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 from oauth2client.client import flow_from_clientsecrets, FlowExchangeError
 
 from database_setup import Base, Item, Riser, Limb, Arrow, Plunger, Sight, User
 
 app = Flask(__name__)
+
 engine = create_engine('sqlite:///archery_catalog.db')
 Base.metadata.bind = engine
-DBSession = sessionmaker(bind=engine)
-db = DBSession()
+db = scoped_session(sessionmaker(bind=engine))
+
 CLIENT_ID = (json.loads(open("client_secrets.json", "r")
              .read())["web"]["client_id"])
 
@@ -159,10 +160,6 @@ def formatFieldName(field, undo=False):
         return field.replace("_", " ").title()
 
 
-# CODE ADAPTED FROM UDACITY -------------------------------------------
-# https://github.com/udacity/ud330/blob/master/Lesson2/step6/project.py
-
-
 @app.route("/login")
 def showLogin():
     # Create anti-forgery state token
@@ -218,7 +215,6 @@ def gconnect():
     if result['issued_to'] != CLIENT_ID:
         response = make_response(
             json.dumps("Token's client ID does not match app's."), 401)
-        print "Token's client ID does not match app's."
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -259,7 +255,6 @@ def gconnect():
     output += session['picture']
     output += ' " style = "width: 300px; height: 300px;border-radius: 150px;" '
     output += ' "-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
-    print "done!"
     return output
 
 
@@ -269,15 +264,10 @@ def gdisconnect():
     if access_token is None:
         flash("No user is logged in.", "status")
         return redirect(request.referrer)
-    print 'In gdisconnect access token is %s', access_token
-    print 'User name is: '
-    print session['username']
     url = ('https://accounts.google.com/o/oauth2/revoke?token=%s'
            % session['access_token'])
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
-    print 'result is '
-    print result
     if result['status'] == '200':
         del session['access_token']
         del session['gplus_id']
@@ -313,9 +303,9 @@ def getUserID(email):
         return None
 
 
-# CODE ADAPTED FROM UDACITY -------------------------------------------
-# https://github.com/udacity/ud330/blob/master/Lesson2/step6/project.py
-
+@app.teardown_request
+def remove_session(ex=None):
+    db.remove()
 
 if __name__ == '__main__':
     app.secret_key = "Robin_Hood_was_here"
