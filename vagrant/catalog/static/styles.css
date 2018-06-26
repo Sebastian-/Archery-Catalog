@@ -206,10 +206,11 @@ dd, dt {
 	margin-bottom: 20px;
     color: black;
     font-size: 25px;
+    background-color: rgba(83, 188, 86, 0.5);
 }
 
 .newItemLink:hover {
-	background-color: rgba(83, 188, 86, 0.5);
+	background-color: rgba(83, 188, 86, 0.8);
 	border-radius: 2px;
 }
 
@@ -259,4 +260,4 @@ h2 {
 @media screen and (min-width: 1200px) {
     #header-title {font-size: 25px;}
     .loginButton {width: 200px;}
-} 
+}
